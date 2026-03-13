@@ -14,11 +14,15 @@ import {
   ChevronDown,
   Shield,
   FileText,
-  Clock
+  Clock,
+  FolderTree,
+  List,
+  HardDrive
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface SidebarProps {
   onLogout?: () => void;
@@ -29,17 +33,22 @@ export function Sidebar({ onLogout }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const { hasRole, hasPermission } = useRoleAccess();
+  const { tenant } = useTenant();
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', badge: null, show: true },
     { icon: Files, label: 'Documents', href: '/documents', badge: null, show: true },
     { icon: Folder, label: 'Folders', href: '/folders', badge: null, show: hasRole(['admin', 'manager']) },
     { icon: FileText, label: 'Version History', href: '/documents/versions', badge: null, show: true },
+    { icon: Clock, label: 'Pending Approvals', href: '/workflow/pending-approvals', badge: null, show: hasRole(['admin', 'manager']) },
   ];
 
   const adminItems = [
     { icon: Users, label: 'Users', href: '/admin/users', badge: null, show: hasRole('admin') },
     { icon: Shield, label: 'Roles', href: '/admin/roles', badge: null, show: hasRole('admin') },
+    { icon: FolderTree, label: 'Categories', href: '/admin/categories', badge: null, show: hasRole('admin') },
+    { icon: List, label: 'Metadata Fields', href: '/admin/metadata', badge: null, show: hasRole('admin') },
+    { icon: HardDrive, label: 'Storage', href: '/admin/storage', badge: null, show: hasRole('admin') },
     { icon: Clock, label: 'Audit Logs', href: '/admin/audit-logs', badge: null, show: hasRole(['admin', 'manager']) },
     { icon: Settings, label: 'Settings', href: '/admin/settings', badge: null, show: hasRole('admin') },
   ];
@@ -54,7 +63,10 @@ export function Sidebar({ onLogout }: SidebarProps) {
     <>
       {/* Mobile Toggle */}
       <div className="sticky top-0 z-50 flex items-center justify-between bg-sidebar border-b border-sidebar-border px-4 py-3 md:hidden">
-        <div className="text-sm font-semibold text-sidebar-foreground">DocFlow</div>
+        <div className="flex flex-col">
+          <div className="text-sm font-semibold text-sidebar-foreground">DocFlow</div>
+          {tenant && <div className="text-xs text-sidebar-foreground/60">{tenant.name}</div>}
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -73,12 +85,13 @@ export function Sidebar({ onLogout }: SidebarProps) {
       } transition-transform pt-0 md:pt-6`}>
         
         {/* Logo */}
-        <div className="hidden md:flex px-6 pb-8">
+        <div className="hidden md:flex flex-col px-6 pb-8">
           <h1 className="text-2xl font-bold text-sidebar-foreground">DocFlow</h1>
+          {tenant && <span className="text-xs font-medium text-sidebar-foreground/60 mt-1">{tenant.name}</span>}
         </div>
 
         {/* Menu Sections */}
-        <nav className="space-y-2 px-3 md:px-4">
+        <nav className="space-y-2 px-3 md:px-4 pb-24">
           {/* Main Menu */}
           <div className="space-y-1">
             <div className="px-3 py-2 text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer';
 
@@ -64,41 +65,43 @@ export const RolePermissions: Record<UserRole, string[]> = {
   ],
 };
 
-// Mock current user - replace with actual auth context
-const mockUser = {
-  id: 'user-001',
-  name: 'John Admin',
-  email: 'john@acme.com',
-  role: 'admin' as UserRole,
-  roles: ['admin'] as UserRole[],
-};
-
 export function useRoleAccess() {
-  // In production, get this from auth context/session
-  const user = mockUser;
+  const { user } = useAuth();
+  
+  // Map user roles to UserRole type
+  const userRoles: UserRole[] = user?.roles?.map((r: string) => r.toLowerCase() as UserRole) || [];
+  const primaryRole: UserRole = (userRoles[0] || 'viewer') as UserRole;
+  
+  const currentUser = user ? {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: primaryRole,
+    roles: userRoles,
+  } : null;
 
   const hasPermission = useCallback(
     (permission: string): boolean => {
-      if (!user || !user.role) return false;
+      if (!currentUser || !currentUser.role) return false;
 
       // Check if user has any role with this permission
-      const userRoles = user.roles || [user.role];
-      return userRoles.some((role) => RolePermissions[role]?.includes(permission));
+      const roles = currentUser.roles || [currentUser.role];
+      return roles.some((role) => RolePermissions[role]?.includes(permission));
     },
-    [user]
+    [currentUser]
   );
 
   const hasRole = useCallback(
     (role: UserRole | UserRole[]): boolean => {
-      if (!user || !user.role) return false;
+      if (!currentUser || !currentUser.role) return false;
 
       const roles = Array.isArray(role) ? role : [role];
-      const userRoles = user.roles || [user.role];
+      const userRoles = currentUser.roles || [currentUser.role];
 
       // Check if any user role meets the requirement
       return roles.some((r) => userRoles.includes(r));
     },
-    [user]
+    [currentUser]
   );
 
   const canPerformAction = useCallback(
@@ -109,12 +112,12 @@ export function useRoleAccess() {
   );
 
   const getHighestRole = useCallback((): UserRole => {
-    if (!user || !user.roles) return user?.role || 'viewer';
+    if (!currentUser || !currentUser.roles) return currentUser?.role || 'viewer';
 
     let highest: UserRole = 'viewer';
     let highestLevel = RoleHierarchy[highest];
 
-    for (const role of user.roles) {
+    for (const role of currentUser.roles) {
       const level = RoleHierarchy[role];
       if (level > highestLevel) {
         highestLevel = level;
@@ -123,17 +126,17 @@ export function useRoleAccess() {
     }
 
     return highest;
-  }, [user]);
+  }, [currentUser]);
 
   return {
-    currentUser: user,
+    currentUser,
     hasPermission,
     hasRole,
     canPerformAction,
     getHighestRole,
-    isAdmin: user?.role === 'admin' || user?.roles?.includes('admin'),
-    isManager: ['admin', 'manager'].includes(user?.role || '') || user?.roles?.some((r) => ['admin', 'manager'].includes(r)),
-    isStaff: ['admin', 'manager', 'staff'].includes(user?.role || '') || user?.roles?.some((r) => ['admin', 'manager', 'staff'].includes(r)),
+    isAdmin: currentUser?.role === 'admin' || currentUser?.roles?.includes('admin'),
+    isManager: ['admin', 'manager'].includes(currentUser?.role || '') || currentUser?.roles?.some((r) => ['admin', 'manager'].includes(r)),
+    isStaff: ['admin', 'manager', 'staff'].includes(currentUser?.role || '') || currentUser?.roles?.some((r) => ['admin', 'manager', 'staff'].includes(r)),
     isViewer: true, // All roles can view
   };
 }

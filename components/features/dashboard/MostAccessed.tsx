@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, FileImage, FileArchive, Clock } from 'lucide-react';
+import { FileText, FileImage, FileArchive, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
@@ -12,12 +12,10 @@ interface Document {
   id: string;
   name: string;
   type?: string;
-  size?: string;
-  uploadedAt?: string;
-  createdAt?: string;
+  access_count?: number;
 }
 
-interface RecentDocumentsProps {
+interface MostAccessedProps {
   tenantId?: string | null;
 }
 
@@ -36,36 +34,21 @@ const getFileType = (name: string): string => {
   return 'default';
 };
 
-const formatDate = (dateString?: string) => {
-  if (!dateString) return 'Unknown';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 60) return `${diffMins} mins ago`;
-  if (diffHours < 24) return `${diffHours} hours ago`;
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString();
-};
-
-export function RecentDocuments({ tenantId }: RecentDocumentsProps) {
+export function MostAccessed({ tenantId }: MostAccessedProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchRecentDocuments();
+    fetchMostAccessed();
   }, [tenantId]);
 
-  const fetchRecentDocuments = async () => {
+  const fetchMostAccessed = async () => {
     try {
       setIsLoading(true);
-      const data = await apiRequest<Document[]>('/dashboard/recent?limit=10', { method: 'GET' });
+      const data = await apiRequest<Document[]>('/dashboard/most-accessed?limit=5', { method: 'GET' });
       setDocuments(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      console.error('Failed to fetch recent documents', error);
+      console.error('Failed to fetch most accessed documents', error);
       setDocuments([]);
     } finally {
       setIsLoading(false);
@@ -75,7 +58,7 @@ export function RecentDocuments({ tenantId }: RecentDocumentsProps) {
   return (
     <Card className="border-border bg-card p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-foreground">Recent Documents</h2>
+        <h2 className="text-xl font-semibold text-foreground">Most Accessed</h2>
         <Link href="/documents">
           <Button variant="ghost" className="text-primary hover:bg-primary/10">
             View All
@@ -95,7 +78,7 @@ export function RecentDocuments({ tenantId }: RecentDocumentsProps) {
             </div>
           ))
         ) : documents.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No recent documents</p>
+          <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
         ) : (
           documents.map((doc) => {
             const fileType = getFileType(doc.name);
@@ -113,14 +96,14 @@ export function RecentDocuments({ tenantId }: RecentDocumentsProps) {
                     <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
                       {doc.name}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      {doc.size && <span>{doc.size}</span>}
-                      {(doc.size && doc.uploadedAt) && <span>•</span>}
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatDate(doc.uploadedAt || doc.createdAt)}</span>
+                    {doc.access_count !== undefined && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          <span>{doc.access_count} views</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <Button

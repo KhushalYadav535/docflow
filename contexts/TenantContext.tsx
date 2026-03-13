@@ -1,6 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiRequest } from '@/lib/api';
+import { useAuth } from './AuthContext';
 
 export interface Tenant {
   id: string;
@@ -14,53 +16,48 @@ export interface Tenant {
 
 export interface TenantContextType {
   tenant: Tenant | null;
-  tenants: Tenant[];
   isLoading: boolean;
-  switchTenant: (tenantId: string) => Promise<void>;
   currentTenantId: string | null;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  // Mock tenant data - replace with actual API call in production
-  const mockTenant: Tenant = {
-    id: 'tenant-001',
-    name: 'Acme Corporation',
-    slug: 'acme',
-    logoUrl: '/logos/acme.png',
-    primaryColor: '#6B3FBF', // Purple
-    secondaryColor: '#1A1A2E', // Dark
-    createdAt: new Date().toISOString(),
-  };
+  const { tenantId } = useAuth();
+  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentTenantId, setCurrentTenantId] = useState<string | null>(tenantId);
 
-  const mockTenants: Tenant[] = [
-    mockTenant,
-    {
-      id: 'tenant-002',
-      name: 'Tech Innovations Inc',
-      slug: 'techinnovations',
-      logoUrl: '/logos/techinnovations.png',
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  const [currentTenant, setCurrentTenant] = React.useState<Tenant | null>(mockTenant);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [currentTenantId, setCurrentTenantId] = React.useState<string | null>(mockTenant.id);
-
-  const switchTenant = async (tenantId: string) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const tenant = mockTenants.find((t) => t.id === tenantId);
-      if (tenant) {
-        setCurrentTenant(tenant);
-        setCurrentTenantId(tenant.id);
-        // In production: update session/cookies with tenant ID
+  useEffect(() => {
+    setCurrentTenantId(tenantId);
+    if (tenantId) {
+      fetchTenant(tenantId);
+    } else {
+      // Try to get from localStorage
+      const storedTenantId = localStorage.getItem('tenantId');
+      if (storedTenantId) {
+        setCurrentTenantId(storedTenantId);
+        fetchTenant(storedTenantId);
+      } else {
+        setIsLoading(false);
       }
+    }
+  }, [tenantId]);
+
+  const fetchTenant = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const data = await apiRequest<Tenant>(`/tenants/${id}`, { method: 'GET' });
+      setCurrentTenant(data);
+    } catch (error: any) {
+      console.error('Failed to fetch tenant', error);
+      // Fallback to default tenant if API fails
+      setCurrentTenant({
+        id: id,
+        name: 'Default Tenant',
+        slug: 'default',
+        createdAt: new Date().toISOString(),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +67,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     <TenantContext.Provider
       value={{
         tenant: currentTenant,
-        tenants: mockTenants,
         isLoading,
-        switchTenant,
         currentTenantId,
       }}
     >

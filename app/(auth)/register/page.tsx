@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -19,7 +22,17 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    organizationName: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -35,7 +48,7 @@ export default function RegisterPage() {
 
     try {
       // Validation
-      if (!formData.fullName || !formData.email || !formData.password) {
+      if (!formData.fullName || !formData.email || !formData.password || !formData.organizationName) {
         setError('All fields are required');
         setIsLoading(false);
         return;
@@ -53,17 +66,15 @@ export default function RegisterPage() {
         return;
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      await register(formData.fullName, formData.email, formData.password, formData.organizationName);
       setSuccess(true);
+      toast.success('Registration successful!');
       setTimeout(() => {
-        localStorage.setItem('userEmail', formData.email);
-        localStorage.setItem('isAuthenticated', 'true');
         router.push('/dashboard');
       }, 2000);
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
+      toast.error(err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -135,35 +146,79 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Password Field */}
+            {/* Organization Name */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <Label htmlFor="organizationName" className="text-foreground">Organization Name</Label>
               <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
+                id="organizationName"
+                name="organizationName"
+                type="text"
+                placeholder="My Company"
+                value={formData.organizationName}
                 onChange={handleChange}
                 className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                You will be the administrator of this organization
+              </p>
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="bg-background border-border text-foreground placeholder:text-muted-foreground pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">At least 8 characters</p>
             </div>
 
             {/* Confirm Password Field */}
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="bg-background border-border text-foreground placeholder:text-muted-foreground"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="bg-background border-border text-foreground placeholder:text-muted-foreground pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Terms */}

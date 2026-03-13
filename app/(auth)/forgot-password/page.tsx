@@ -20,16 +20,17 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      if (email && email.includes('@')) {
-        setSubmitted(true);
-      } else {
+      if (!email || !email.includes('@')) {
         setError('Please enter a valid email address');
+        setIsLoading(false);
+        return;
       }
-    } catch (err) {
-      setError('Failed to process request. Please try again.');
+
+      const { apiClient } = await import('@/lib/api');
+      await apiClient.requestPasswordReset(email);
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to process request. Please try again.');
     } finally {
       setIsLoading(false);
     }
