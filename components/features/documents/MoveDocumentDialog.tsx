@@ -18,6 +18,7 @@ interface Folder {
   id: string;
   name: string;
   parent_id?: string;
+  parentId?: string;
   path?: string;
 }
 
@@ -40,7 +41,8 @@ export function MoveDocumentDialog({
 }: MoveDocumentDialogProps) {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(currentFolderId || null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -51,108 +53,86 @@ export function MoveDocumentDialog({
 
   const fetchFolders = async () => {
     try {
+      setIsLoadingFolders(true);
       const data = await apiRequest<Folder[]>('/folders', { method: 'GET' });
       setFolders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch folders', error);
       toast.error('Failed to load folders');
+      setFolders([]);
+    } finally {
+      setIsLoadingFolders(false);
     }
   };
 
   const handleMove = async () => {
     try {
-      setIsLoading(true);
+      setIsMoving(true);
       const config = getApiConfig();
-      await apiClient.moveDocument(documentId, selectedFolderId || '', config);
+      await apiRequest(`/documents/${documentId}/move`, {
+        method: 'PATCH',
+        body: JSON.stringify({ folderId: selectedFolderId || null }),
+      });
       toast.success(`Document "${documentName}" moved successfully`);
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
       toast.error(error.message || 'Failed to move document');
     } finally {
-      setIsLoading(false);
+      setIsMoving(false);
     }
   };
 
-  const buildFolderTree = (folders: Folder[]): Folder[] => {
-    const folderMap = new Map<string, Folder & { children?: Folder[] }>();
-    const roots: Folder[] = [];
-
-    // Create map
-    folders.forEach(folder => {
-      folderMap.set(folder.id, { ...folder, children: [] });
-    });
-
-    // Build tree
-    folders.forEach(folder => {
-      const folderWithChildren = folderMap.get(folder.id)!;
-      if (folder.parent_id && folderMap.has(folder.parent_id)) {
-        const parent = folderMap.get(folder.parent_id)!;
-        if (!parent.children) parent.children = [];
-        parent.children.push(folderWithChildren);
-      } else {
-        roots.push(folderWithChildren);
-      }
-    });
-
-    return roots;
+  const getFolderLabel = (folder: Folder) => {
+    if (folder.path) return folder.path;
+    return folder.name;
   };
-
-  const renderFolderTree = (folderList: Folder[], level = 0): JSX.Element[] => {
-    return folderList.map((folder) => (
-      <div key={folder.id} className="space-y-1">
-        <label className="flex items-center gap-2 p-2 rounded hover:bg-accent/10 cursor-pointer">
-          <input
-            type="radio"
-            name="folder"
-            value={folder.id}
-            checked={selectedFolderId === folder.id}
-            onChange={() => setSelectedFolderId(folder.id)}
-            className="w-4 h-4"
-          />
-          <FolderTree className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-foreground" style={{ paddingLeft: `${level * 20}px` }}>
-            {folder.name}
-          </span>
-        </label>
-        {(folder as any).children && renderFolderTree((folder as any).children, level + 1)}
-      </div>
-    ));
-  };
-
-  const treeFolders = buildFolderTree(folders);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md border-border/70 bg-popover/95 backdrop-blur-xl dark:border-white/10 dark:bg-[#111118]/95">
         <DialogHeader>
-          <DialogTitle>Move Document</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-foreground dark:text-white">Move Document</DialogTitle>
+          <DialogDescription className="text-muted-foreground dark:text-white/55">
             Select a folder to move "{documentName}" to
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg p-4 space-y-1">
-          <label className="flex items-center gap-2 p-2 rounded hover:bg-accent/10 cursor-pointer">
-            <input
-              type="radio"
-              name="folder"
-              value=""
-              checked={selectedFolderId === null}
-              onChange={() => setSelectedFolderId(null)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm text-foreground font-medium">Root (No Folder)</span>
+        <div className="space-y-3 rounded-xl border border-border/70 p-4 dark:border-white/10">
+          <label className="text-sm font-medium text-foreground dark:text-white">
+            Select destination folder
           </label>
-          {renderFolderTree(treeFolders)}
+          {isLoadingFolders ? (
+            <p className="text-sm text-muted-foreground">Loading folders...</p>
+          ) : (
+            <select
+              value={selectedFolderId ?? ''}
+              onChange={(e) => setSelectedFolderId(e.target.value || null)}
+              className="w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm text-foreground dark:border-white/10 dark:bg-white/5 dark:text-white"
+            >
+              <option value="">Root (No Folder)</option>
+              {folders.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {getFolderLabel(folder)}
+                </option>
+              ))}
+            </select>
+          )}
+          {!isLoadingFolders && folders.length === 0 && (
+            <p className="text-xs text-muted-foreground">No folders found. Create a folder first.</p>
+          )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">
             Cancel
           </Button>
-          <Button onClick={handleMove} disabled={isLoading}>
-            {isLoading ? 'Moving...' : 'Move Document'}
+          <Button
+            onClick={handleMove}
+            disabled={isMoving || isLoadingFolders}
+            className="rounded-full border border-primary/35 bg-primary text-primary-foreground hover:bg-primary/95"
+          >
+            {isMoving ? 'Moving...' : 'Move Document'}
           </Button>
         </DialogFooter>
       </DialogContent>

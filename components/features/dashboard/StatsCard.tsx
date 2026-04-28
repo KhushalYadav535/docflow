@@ -34,15 +34,15 @@ export function StatsCard({
   };
 
   return (
-    <Card className="border-border bg-card p-6">
+    <Card className="rounded-[1.75rem] border border-border/70 bg-card/80 p-6 shadow-[0_18px_50px_rgba(15,15,20,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/6 dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
       <div className="flex items-start justify-between">
-        <div className="space-y-2 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <div className="flex-1 space-y-2">
+          <p className="text-sm font-medium text-muted-foreground dark:text-white/52">{label}</p>
           {isLoading ? (
             <Skeleton className="h-9 w-24" />
           ) : (
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-foreground">{value}</p>
+              <p className="text-3xl font-semibold text-foreground dark:text-white">{value}</p>
               {trend && (
                 <span className={`text-xs font-semibold ${trend.isPositive ? 'text-green-500' : 'text-red-500'}`}>
                   {trend.isPositive ? '+' : '-'}{Math.abs(trend.value)}%
@@ -51,7 +51,7 @@ export function StatsCard({
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+        <div className={`rounded-2xl border border-border/60 p-3 dark:border-white/8 ${colorClasses[color]}`}>
           <Icon className="h-6 w-6" />
         </div>
       </div>

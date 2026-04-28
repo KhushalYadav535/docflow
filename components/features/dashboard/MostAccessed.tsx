@@ -56,11 +56,11 @@ export function MostAccessed({ tenantId }: MostAccessedProps) {
   };
 
   return (
-    <Card className="border-border bg-card p-6">
+    <Card className="rounded-[1.9rem] border border-border/70 bg-card/80 p-6 shadow-[0_18px_50px_rgba(15,15,20,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/6 dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-foreground">Most Accessed</h2>
+        <h2 className="text-xl font-semibold text-foreground dark:text-white">Most Accessed</h2>
         <Link href="/documents">
-          <Button variant="ghost" className="text-primary hover:bg-primary/10">
+          <Button variant="ghost" className="rounded-full text-primary hover:bg-primary/10">
             View All
           </Button>
         </Link>
@@ -78,26 +78,26 @@ export function MostAccessed({ tenantId }: MostAccessedProps) {
             </div>
           ))
         ) : documents.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+          <p className="py-8 text-center text-sm text-muted-foreground dark:text-white/45">No data available</p>
         ) : (
           documents.map((doc) => {
             const fileType = getFileType(doc.name);
             const Icon = iconMap[fileType] || FileText;
             return (
               <Link key={doc.id} href={`/documents/${doc.id}`}>
-                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors group cursor-pointer">
+                <div className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-transparent p-3 transition-colors hover:border-border/70 hover:bg-accent/35 dark:hover:border-white/8 dark:hover:bg-white/6">
                   <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                       <Icon className="h-5 w-5 text-primary" />
                     </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
+                    <p className="truncate text-sm font-medium text-foreground group-hover:text-primary dark:text-white">
                       {doc.name}
                     </p>
                     {doc.access_count !== undefined && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground dark:text-white/45">
                         <div className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
                           <span>{doc.access_count} views</span>
@@ -109,7 +109,7 @@ export function MostAccessed({ tenantId }: MostAccessedProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-muted-foreground opacity-0 transition-opacity hover:bg-primary/10 hover:text-primary group-hover:opacity-100 dark:text-white/45"
                   >
                     Open
                   </Button>

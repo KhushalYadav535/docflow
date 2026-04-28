@@ -11,20 +11,20 @@
   --card-foreground: oklch(0.15 0 0);
   --popover: oklch(0.98 0 0);
   --popover-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.55 0.22 264);
-  --primary-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.78 0.12 78);
+  --primary-foreground: oklch(0.18 0.01 85);
   --secondary: oklch(0.9 0 0);
   --secondary-foreground: oklch(0.15 0 0);
   --muted: oklch(0.9 0 0);
   --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.55 0.22 264);
-  --accent-foreground: oklch(0.98 0 0);
+  --accent: oklch(0.78 0.12 78);
+  --accent-foreground: oklch(0.18 0.01 85);
   --destructive: oklch(0.63 0.24 27);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.92 0 0);
   --input: oklch(0.92 0 0);
-  --ring: oklch(0.5 0.1 264);
-  --chart-1: oklch(0.55 0.22 264);
+  --ring: oklch(0.7 0.1 78);
+  --chart-1: oklch(0.78 0.12 78);
   --chart-2: oklch(0.6 0.2 174);
   --chart-3: oklch(0.7 0.2 70);
   --chart-4: oklch(0.5 0.2 50);
@@ -32,8 +32,8 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.98 0 0);
   --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-primary: oklch(0.55 0.22 264);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.78 0.12 78);
+  --sidebar-primary-foreground: oklch(0.18 0.01 85);
   --sidebar-accent: oklch(0.95 0 0);
   --sidebar-accent-foreground: oklch(0.15 0 0);
   --sidebar-border: oklch(0.92 0 0);
@@ -41,38 +41,38 @@
 }
 
 .dark {
-  --background: oklch(0.12 0 0);
+  --background: oklch(0.11 0.01 285);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.15 0 0);
+  --card: oklch(0.16 0.01 285);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.15 0 0);
+  --popover: oklch(0.16 0.01 285);
   --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.62 0.24 264);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.25 0 0);
+  --primary: oklch(0.82 0.12 82);
+  --primary-foreground: oklch(0.17 0.01 85);
+  --secondary: oklch(0.24 0.01 285);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.25 0 0);
+  --muted: oklch(0.24 0.01 285);
   --muted-foreground: oklch(0.7 0 0);
-  --accent: oklch(0.62 0.24 264);
-  --accent-foreground: oklch(0.12 0 0);
+  --accent: oklch(0.82 0.12 82);
+  --accent-foreground: oklch(0.17 0.01 85);
   --destructive: oklch(0.63 0.24 27);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0 0);
-  --input: oklch(0.2 0 0);
-  --ring: oklch(0.62 0.15 264);
-  --chart-1: oklch(0.62 0.24 264);
+  --border: oklch(0.3 0.01 285);
+  --input: oklch(0.21 0.01 285);
+  --ring: oklch(0.82 0.1 82);
+  --chart-1: oklch(0.82 0.12 82);
   --chart-2: oklch(0.68 0.22 174);
   --chart-3: oklch(0.75 0.22 70);
   --chart-4: oklch(0.58 0.22 50);
   --chart-5: oklch(0.7 0.22 25);
-  --sidebar: oklch(0.12 0 0);
+  --sidebar: oklch(0.11 0.01 285);
   --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.62 0.24 264);
-  --sidebar-primary-foreground: oklch(0.12 0 0);
-  --sidebar-accent: oklch(0.25 0 0);
+  --sidebar-primary: oklch(0.82 0.12 82);
+  --sidebar-primary-foreground: oklch(0.17 0.01 85);
+  --sidebar-accent: oklch(0.24 0.01 285);
   --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.25 0 0);
-  --sidebar-ring: oklch(0.62 0.15 264);
+  --sidebar-border: oklch(0.3 0.01 285);
+  --sidebar-ring: oklch(0.82 0.1 82);
 }
 
 @theme inline {
@@ -122,5 +122,35 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at top, rgba(245, 191, 90, 0.08), transparent 30%),
+      linear-gradient(180deg, rgba(10, 10, 14, 1) 0%, rgba(12, 12, 18, 1) 45%, rgba(8, 8, 12, 1) 100%);
   }
 }
+
+/* Premium utility classes */
+.glass-card {
+  @apply border border-border/30 bg-card/60 shadow-xl backdrop-blur-xl transition-all;
+}
+.fade-button {
+  @apply transition-transform duration-300;
+}
+.fade-button:hover {
+  @apply -translate-y-0.5;
+}
+
+::selection {
+  background: rgba(245, 191, 90, 0.3);
+  color: white;
+}
+
+/* Subtle entrance animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s ease-out forwards;
+}
+
+

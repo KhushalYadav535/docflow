@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('admin@docflow.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -44,45 +44,94 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-background/95 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">DocFlow</h1>
-          <p className="text-muted-foreground">Enterprise Document Management System</p>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,191,90,0.16),_transparent_30%),linear-gradient(180deg,_rgba(10,10,14,1)_0%,_rgba(12,12,18,1)_45%,_rgba(8,8,12,1)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:120px_120px] opacity-[0.05]" />
+
+      <div className="relative z-10 grid w-full max-w-6xl gap-10 lg:grid-cols-[1fr_480px] lg:items-center">
+        <div className="hidden space-y-8 lg:block">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white/5 px-4 py-2 text-sm text-primary shadow-[0_8px_30px_rgba(245,191,90,0.12)]">
+            <Sparkles className="h-4 w-4" />
+            Welcome back to your premium workspace
+          </div>
+
+          <div className="space-y-5">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/30 bg-primary/12 text-primary shadow-[0_0_30px_rgba(245,191,90,0.18)]">
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-lg font-semibold uppercase tracking-[0.18em] text-white">DocFlow</p>
+                <p className="text-sm text-white/55">Elegant control for enterprise documents</p>
+              </div>
+            </Link>
+
+            <h1 className="max-w-xl text-5xl font-semibold leading-tight tracking-tight text-white">
+              Sign in to continue your polished document workflow.
+            </h1>
+            <p className="max-w-xl text-lg leading-8 text-white/64">
+              Secure access, rapid retrieval, and premium organization for contracts, records, and critical files.
+            </p>
+          </div>
+
+          <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+            <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+              <p className="text-sm text-white/45">Fast access</p>
+              <p className="mt-2 text-xl font-medium text-white">Search-ready in seconds</p>
+              <p className="mt-3 text-sm leading-7 text-white/58">Return to approvals, folders, and documents without losing momentum.</p>
+            </div>
+            <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+              <p className="text-sm text-white/45">Protected by design</p>
+              <p className="mt-2 text-xl font-medium text-white">Role-aware security</p>
+              <p className="mt-3 text-sm leading-7 text-white/58">Permissions and visibility stay clean, controlled, and enterprise-ready.</p>
+            </div>
+          </div>
         </div>
 
-        {/* Login Card */}
-        <Card className="border-border bg-card p-6 md:p-8 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Error Message */}
+        <Card className="border border-white/10 bg-white/6 p-7 shadow-[0_25px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl rounded-[2rem]">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.24em] text-primary/85">Sign In</p>
+              <h2 className="mt-3 text-3xl font-semibold text-white">Access your workspace</h2>
+              <p className="mt-2 text-sm leading-7 text-white/58">
+                Continue with your secure DocFlow account.
+              </p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="flex gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-destructive">{error}</p>
+              <div className="flex gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 p-4 backdrop-blur-sm">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
+                <p className="text-sm text-red-300">{error}</p>
               </div>
             )}
 
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email Address</Label>
+            <div className="space-y-2.5">
+              <Label htmlFor="email" className="text-sm font-medium text-white/82">
+                Email Address
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="your.email@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-background border-border text-foreground placeholder:text-muted-foreground"
+                className="h-12 rounded-xl border-white/10 bg-black/20 text-white placeholder:text-white/30 focus:border-primary/40 focus:ring-primary/20"
                 required
               />
             </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
-                <Link href="/forgot-password" className="text-xs text-primary hover:text-primary/80">
-                  Forgot?
+                <Label htmlFor="password" className="text-sm font-medium text-white/82">
+                  Password
+                </Label>
+                <Link href="/forgot-password" className="text-xs text-primary transition-colors hover:text-primary/80">
+                  Forgot password?
                 </Link>
               </div>
               <div className="relative">
@@ -92,61 +141,82 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-background border-border text-foreground placeholder:text-muted-foreground pr-10"
+                  className="h-12 rounded-xl border-white/10 bg-black/20 pr-12 text-white placeholder:text-white/30 focus:border-primary/40 focus:ring-primary/20"
                   required
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/45 transition-colors hover:text-white/80"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-5 w-5" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-5 w-5" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <input
                 type="checkbox"
                 id="remember"
-                className="h-4 w-4 rounded border-border cursor-pointer"
+                className="h-4 w-4 cursor-pointer rounded border-white/20 bg-black/20 accent-[rgb(245,191,90)]"
               />
-              <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+              <label htmlFor="remember" className="cursor-pointer text-sm text-white/58 transition-colors hover:text-white/75">
                 Remember me
               </label>
             </div>
 
-            {/* Login Button */}
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10"
+              className="h-12 w-full rounded-xl border border-primary/35 bg-primary font-semibold text-primary-foreground shadow-[0_16px_50px_rgba(245,191,90,0.25)] hover:bg-primary/95 disabled:opacity-50"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin">•</span> Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Sign In
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              )}
             </Button>
 
-            {/* Sign Up Link */}
-            <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-primary hover:text-primary/80 font-medium">
-                Sign up
-              </Link>
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-transparent px-3 text-white/38">New to DocFlow?</span>
+              </div>
             </div>
+
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="h-12 w-full rounded-xl border-white/12 bg-white/4 text-white hover:border-primary/30 hover:bg-white/8 hover:text-white"
+            >
+              <Link href="/register">
+                Create an account
+              </Link>
+            </Button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 pt-4 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center mb-2">Demo Credentials:</p>
-            <p className="text-xs text-muted-foreground text-center font-mono">
-              Email: demo@example.com<br />
-              Password: password
-            </p>
-          </div>
+          <p className="mt-6 text-center text-xs text-white/42">
+            By signing in, you agree to our{' '}
+            <Link href="#" className="text-primary transition-colors hover:text-primary/80">
+              Terms of Service
+            </Link>
+            {' '}and{' '}
+            <Link href="#" className="text-primary transition-colors hover:text-primary/80">
+              Privacy Policy
+            </Link>
+          </p>
         </Card>
       </div>
     </div>

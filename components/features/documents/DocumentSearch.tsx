@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ import { MoveDocumentDialog } from './MoveDocumentDialog';
 interface Document {
   id: string;
   name: string;
+  folder_id?: string;
+  folderId?: string;
   type?: string;
   size?: string;
   department?: string;
@@ -27,19 +30,32 @@ interface Document {
 }
 
 const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
-  if (!highlight.trim()) return <span>{text}</span>;
-  const regex = new RegExp(`(${highlight})`, 'gi');
+  const term = highlight.trim();
+  if (!term) return <span>{text}</span>;
+
+  const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedTerm})`, 'gi');
   const parts = text.split(regex);
+  const lowerTerm = term.toLowerCase();
+
   return (
     <span>
-      {parts.map((part, i) => 
-        regex.test(part) ? <span key={i} className="bg-yellow-200 text-yellow-900 rounded px-1">{part}</span> : part
+      {parts.map((part, i) =>
+        part.toLowerCase() === lowerTerm ? (
+          <span key={i} className="bg-yellow-200 text-yellow-900 rounded px-1">
+            {part}
+          </span>
+        ) : (
+          part
+        )
       )}
     </span>
   );
 };
 
 export function DocumentSearch() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [filters, setFilters] = useState<any>({});
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +66,16 @@ export function DocumentSearch() {
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  useEffect(() => {
+    const keywordFromUrl = searchParams.get('q');
+    if (!keywordFromUrl) return;
+
+    setFilters((prev: any) => {
+      if (prev.keyword === keywordFromUrl) return prev;
+      return { ...prev, keyword: keywordFromUrl };
+    });
+  }, [searchParams]);
 
   useEffect(() => {
     if (Object.keys(filters).length > 0) {
@@ -93,10 +119,34 @@ export function DocumentSearch() {
         params.append('naturalLanguage', 'true');
       }
 
-      const data = await apiRequest<Document[]>(`/documents/search?${params.toString()}`, { method: 'GET' });
+      const data = await apiRequest<Document[] | { results?: Document[] }>(
+        `/documents/search?${params.toString()}`,
+        { method: 'GET' }
+      );
       const endTime = Date.now();
       setSearchTime((endTime - startTime) / 1000);
-      setDocuments(Array.isArray(data) ? data : []);
+      const normalizedResults = Array.isArray(data) ? data : data?.results || [];
+      const keyword = String(filters.keyword || '').trim().toLowerCase();
+
+      const rankedResults = !keyword
+        ? normalizedResults
+        : [...normalizedResults].sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+
+            const score = (name: string) => {
+              if (name === keyword) return 0;
+              if (name.startsWith(keyword)) return 1;
+              if (name.includes(keyword)) return 2;
+              return 3;
+            };
+
+            const scoreDiff = score(aName) - score(bName);
+            if (scoreDiff !== 0) return scoreDiff;
+            return aName.localeCompare(bName);
+          });
+
+      setDocuments(rankedResults);
     } catch (error: any) {
       console.error('Search failed', error);
       toast.error('Search failed');
@@ -135,21 +185,36 @@ export function DocumentSearch() {
     }
   };
 
+  const handleMove = (doc: Document) => {
+    setSelectedDocument({
+      id: doc.id,
+      name: doc.name,
+      folderId: doc.folderId || doc.folder_id,
+    });
+    setMoveDialogOpen(true);
+  };
+
+  const openDocumentPreview = (docId: string) => {
+    const query = filters.keyword ? `?q=${encodeURIComponent(filters.keyword)}` : '';
+    router.push(`/documents/${docId}${query}`);
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString();
   };
 
   return (
-    <Card className="border-border bg-card p-6">
-      <h2 className="text-xl font-semibold text-foreground mb-6">Document Library</h2>
+    <Card className="rounded-[2rem] border border-border/70 bg-card/80 p-6 shadow-[0_18px_50px_rgba(15,15,20,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/6 dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+      <h2 className="mb-6 text-xl font-semibold text-foreground dark:text-white">Document Library</h2>
 
       {/* Advanced Search Component */}
       <div className="mb-6">
         <AdvancedSearch 
           onSearch={setFilters} 
           resultsCount={documents.length} 
-          searchTime={searchTime} 
+          searchTime={searchTime}
+          initialKeyword={filters.keyword || ''}
         />
       </div>
 
@@ -157,7 +222,7 @@ export function DocumentSearch() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="border border-border bg-card rounded-lg overflow-hidden">
+            <div key={i} className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 dark:border-white/10 dark:bg-white/5">
               <Skeleton className="h-32 w-full" />
               <div className="p-4 space-y-2">
                 <Skeleton className="h-4 w-3/4" />
@@ -167,7 +232,7 @@ export function DocumentSearch() {
           ))}
         </div>
       ) : documents.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-border rounded-lg mt-6">
+        <div className="mt-6 rounded-[1.5rem] border-2 border-dashed border-border/70 py-12 text-center dark:border-white/12">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
           <p className="text-foreground font-medium mb-1">No documents found</p>
           <p className="text-muted-foreground text-sm">Try adjusting your advanced search filters</p>
@@ -181,10 +246,19 @@ export function DocumentSearch() {
             return (
               <div
                 key={doc.id}
-                className="group flex flex-col border border-border bg-card hover:bg-muted/10 transition-colors rounded-lg overflow-hidden shadow-sm hover:shadow-md"
+                role="button"
+                tabIndex={0}
+                onClick={() => openDocumentPreview(doc.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openDocumentPreview(doc.id);
+                  }
+                }}
+                className="group flex cursor-pointer flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 shadow-[0_12px_35px_rgba(15,15,20,0.06)] transition-colors hover:border-primary/20 hover:bg-accent/20 dark:border-white/10 dark:bg-white/5 dark:shadow-[0_12px_35px_rgba(0,0,0,0.18)] dark:hover:bg-white/7"
               >
                 {/* Thumbnail Header Placeholder */}
-                <div className="h-32 bg-secondary/30 border-b border-border flex items-center justify-center relative group-hover:bg-secondary/50 transition-colors">
+                <div className="relative flex h-32 items-center justify-center border-b border-border/70 bg-muted/30 transition-colors group-hover:bg-muted/45 dark:border-white/10 dark:bg-white/5 dark:group-hover:bg-white/10">
                   {isPdf ? (
                     <FileText className="h-10 w-10 text-red-400" />
                   ) : isExcel ? (
@@ -193,15 +267,18 @@ export function DocumentSearch() {
                     <FileImage className="h-10 w-10 text-blue-400" />
                   )}
                   {/* Type Badge */}
-                  <div className="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-background/80 backdrop-blur border border-border text-foreground">
+                  <div className="absolute top-2 right-2 rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-foreground backdrop-blur dark:border-white/10 dark:bg-black/30 dark:text-white">
                     {docType}
                   </div>
                 </div>
 
                 {/* Content Body */}
                 <div className="p-4 flex-1 flex flex-col">
-                  <Link href={`/documents/${doc.id}${filters.keyword ? `?q=${encodeURIComponent(filters.keyword)}` : ''}`}>
-                    <h3 className="font-semibold text-foreground text-base mb-1 truncate hover:text-primary cursor-pointer">
+                  <Link
+                    href={`/documents/${doc.id}${filters.keyword ? `?q=${encodeURIComponent(filters.keyword)}` : ''}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="mb-1 cursor-pointer truncate text-base font-semibold text-foreground hover:text-primary dark:text-white">
                       <HighlightedText text={doc.name} highlight={filters.keyword || ''} />
                     </h3>
                   </Link>
@@ -220,12 +297,12 @@ export function DocumentSearch() {
 
                   {/* Matched Snippet */}
                   {(doc.snippet || doc.content) && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 italic mb-4 bg-muted/30 p-2 rounded border-l-2 border-primary/40">
+                    <p className="mb-4 line-clamp-2 rounded-xl border-l-2 border-primary/40 bg-muted/30 p-2 text-xs italic text-muted-foreground dark:bg-white/5">
                       "...<HighlightedText text={doc.snippet || doc.content || ''} highlight={filters.keyword || ''} />..."
                     </p>
                   )}
 
-                  <div className="mt-auto pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="mt-auto flex items-center justify-between border-t border-border/70 pt-3 text-xs text-muted-foreground dark:border-white/10">
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium text-foreground">{doc.uploadedBy || doc.uploaded_by || 'Unknown'}</span>
                       <div className="flex items-center gap-1">
@@ -234,12 +311,16 @@ export function DocumentSearch() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         className="h-7 w-7 text-muted-foreground hover:text-primary"
-                        onClick={() => handleDownload(doc.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDownload(doc.id);
+                        }}
                         title="Download"
                       >
                         <Download className="h-3.5 w-3.5" />
@@ -248,7 +329,11 @@ export function DocumentSearch() {
                         variant="ghost" 
                         size="icon" 
                         className="h-7 w-7 text-muted-foreground hover:text-blue-500"
-                        onClick={() => handleMove(doc)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleMove(doc);
+                        }}
                         title="Move to folder"
                       >
                         <FolderTree className="h-3.5 w-3.5" />
@@ -257,7 +342,11 @@ export function DocumentSearch() {
                         variant="ghost" 
                         size="icon" 
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(doc.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(doc.id);
+                        }}
                         title="Delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

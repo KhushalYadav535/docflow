@@ -41,6 +41,7 @@ interface DocumentViewerProps {
   status: string;
   totalPages?: number;
   searchTerms?: string; // For highlighting search terms
+  extractedText?: string;
 }
 
 interface Version {
@@ -62,6 +63,7 @@ export function DocumentViewer({
   status,
   totalPages = 5,
   searchTerms,
+  extractedText,
 }: DocumentViewerProps) {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,7 +73,7 @@ export function DocumentViewer({
   const [docStatus, setDocStatus] = useState(status);
   const [versions, setVersions] = useState<Version[]>([]);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
-  const { canPerformAction, isAdmin, isManager } = useRoleAccess();
+  const { canPerformAction, isAdmin } = useRoleAccess();
   
   // PDF rendering state
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -79,6 +81,15 @@ export function DocumentViewer({
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [isImage, setIsImage] = useState(false);
+  const totalPagesState = numPages ?? totalPages;
+  const [previewAttempted, setPreviewAttempted] = useState(false);
+  const isPdfDocument =
+    documentType?.toLowerCase().includes('pdf') || documentName.toLowerCase().endsWith('.pdf');
+  const isImageDocument = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(documentName);
+  const canRenderInlinePreview = isPdfDocument || isImageDocument;
+  const hasInlinePreview = Boolean(fileUrl) && (isImage || isPdfDocument);
+  const hasTextFallback = !hasInlinePreview && Boolean(extractedText?.trim());
+  const canUseViewerControls = hasInlinePreview;
 
   useEffect(() => {
     if (showVersionHistory && documentId) {
@@ -88,6 +99,81 @@ export function DocumentViewer({
       setShowVersionHistory(false);
     }
   }, [showVersionHistory, documentId]);
+
+  const loadDocumentFile = useCallback(async () => {
+    if (!documentId) {
+      setPdfError('Document ID is missing');
+      return;
+    }
+
+    try {
+      setIsLoadingPdf(true);
+      setPdfError(null);
+
+      const config = getApiConfig();
+      const blob = await apiClient.getDocumentFile(documentId, undefined, config);
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      setFileUrl((previousUrl) => {
+        if (previousUrl) {
+          window.URL.revokeObjectURL(previousUrl);
+        }
+        return objectUrl;
+      });
+
+      const mimeType = blob.type || documentType?.toLowerCase() || '';
+      const imageLike =
+        mimeType.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(documentName);
+
+      setIsImage(imageLike);
+      setNumPages(imageLike ? 1 : null);
+      setCurrentPage(1);
+      setPreviewAttempted(true);
+    } catch (error: any) {
+      const friendlyMessage =
+        error?.message === 'Failed to fetch document file'
+          ? 'Preview file is not available on the server for this document.'
+          : error?.message || 'Failed to load document preview';
+
+      setPdfError(friendlyMessage);
+      setPreviewAttempted(true);
+    } finally {
+      setIsLoadingPdf(false);
+    }
+  }, [documentId, documentName, documentType]);
+
+  const onDocumentLoadSuccess = useCallback(({ numPages: loadedNumPages }: { numPages: number }) => {
+    setNumPages(loadedNumPages);
+    setCurrentPage((prev) => Math.min(prev, loadedNumPages));
+    setPdfError(null);
+  }, []);
+
+  const onDocumentLoadError = useCallback((error: Error) => {
+    console.error('Failed to render PDF', error);
+    setPdfError('Unable to render this PDF preview');
+  }, []);
+
+  useEffect(() => {
+    if (!canRenderInlinePreview) {
+      setFileUrl(null);
+      setIsImage(false);
+      setNumPages(totalPages || 1);
+      setPdfError(null);
+      setPreviewAttempted(false);
+      return;
+    }
+
+    loadDocumentFile();
+
+    return () => {
+      setFileUrl((previousUrl) => {
+        if (previousUrl) {
+          window.URL.revokeObjectURL(previousUrl);
+        }
+        return null;
+      });
+    };
+  }, [canRenderInlinePreview, loadDocumentFile, totalPages]);
 
   const fetchVersions = async () => {
     if (!documentId) {
@@ -234,76 +320,86 @@ export function DocumentViewer({
         <div className="bg-card border-b border-border p-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             {/* Zoom Controls */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleZoomOut}
-              title="Zoom out"
-              className="text-foreground hover:bg-accent/20"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
+            {canUseViewerControls ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleZoomOut}
+                  title="Zoom out"
+                  className="text-foreground hover:bg-accent/20"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
 
-            <input
-              type="number"
-              min="25"
-              max="400"
-              step="10"
-              value={zoomLevel}
-              onChange={(e) => setZoomLevel(Number(e.target.value))}
-              className="w-16 px-2 py-1 text-sm border border-border rounded bg-background text-foreground text-center"
-            />
-            <span className="text-xs text-muted-foreground">%</span>
+                <input
+                  type="number"
+                  min="25"
+                  max="400"
+                  step="10"
+                  value={zoomLevel}
+                  onChange={(e) => setZoomLevel(Number(e.target.value))}
+                  className="w-16 px-2 py-1 text-sm border border-border rounded bg-background text-foreground text-center"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleZoomIn}
-              title="Zoom in"
-              className="text-foreground hover:bg-accent/20"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleZoomIn}
+                  title="Zoom in"
+                  className="text-foreground hover:bg-accent/20"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
 
-            <div className="h-6 w-px bg-border mx-2" />
+                <div className="h-6 w-px bg-border mx-2" />
 
-            {/* Rotate */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRotate}
-              title="Rotate 90°"
-              className="text-foreground hover:bg-accent/20"
-            >
-              <RotateCw className="w-4 h-4" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRotate}
+                  title="Rotate 90°"
+                  className="text-foreground hover:bg-accent/20"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </Button>
 
-            <div className="h-6 w-px bg-border mx-2" />
+                <div className="h-6 w-px bg-border mx-2" />
 
-            {/* Page Navigation */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-              className="text-foreground hover:bg-accent/20 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="text-foreground hover:bg-accent/20 disabled:opacity-50"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
 
-            <div className="text-sm text-muted-foreground whitespace-nowrap px-2">
-              {currentPage} / {totalPagesState || totalPages}
-            </div>
+                <div className="text-sm text-muted-foreground whitespace-nowrap px-2">
+                  {currentPage} / {totalPagesState || totalPages}
+                </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNextPage}
-              disabled={currentPage === (totalPagesState || totalPages)}
-              className="text-foreground hover:bg-accent/20 disabled:opacity-50"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNextPage}
+                  disabled={currentPage === (totalPagesState || totalPages)}
+                  className="text-foreground hover:bg-accent/20 disabled:opacity-50"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </>
+            ) : hasTextFallback ? (
+              <div className="px-2 text-sm text-muted-foreground">
+                OCR text preview
+              </div>
+            ) : (
+              <div className="px-2 text-sm text-muted-foreground">
+                Preview unavailable
+              </div>
+            )}
           </div>
 
           {/* Right Actions */}
@@ -318,15 +414,17 @@ export function DocumentViewer({
               <Download className="w-4 h-4" />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrint}
-              title="Print"
-              className="text-foreground hover:bg-accent/20"
-            >
-              <Printer className="w-4 h-4" />
-            </Button>
+            {hasInlinePreview && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePrint}
+                title="Print"
+                className="text-foreground hover:bg-accent/20"
+              >
+                <Printer className="w-4 h-4" />
+              </Button>
+            )}
 
             {canPerformAction('upload_version') && (
               <Button
@@ -455,7 +553,7 @@ export function DocumentViewer({
                   style={{ transform: `rotate(${rotation}deg)` }}
                 />
               </div>
-            ) : fileUrl && documentType?.toLowerCase().includes('pdf') ? (
+            ) : fileUrl && isPdfDocument ? (
               <div
                 className="bg-white rounded border border-border flex items-center justify-center overflow-auto"
                 style={{
@@ -485,6 +583,20 @@ export function DocumentViewer({
                   />
                 </Document>
               </div>
+            ) : extractedText?.trim() ? (
+              <div className="w-full max-w-4xl rounded-2xl border border-border bg-background p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Text Preview</p>
+                    <p className="text-xs text-muted-foreground">
+                      Original file preview is unavailable, showing extracted OCR content instead.
+                    </p>
+                  </div>
+                </div>
+                <div className="max-h-[70vh] overflow-auto whitespace-pre-wrap text-sm leading-7 text-foreground">
+                  {extractedText}
+                </div>
+              </div>
             ) : (
               <div
                 className="bg-white rounded border border-border flex items-center justify-center"
@@ -500,7 +612,9 @@ export function DocumentViewer({
                     <div className="text-4xl mb-4">📄</div>
                     <p className="text-sm">Page {currentPage} of {totalPagesState || totalPages}</p>
                     <p className="text-xs mt-2 text-gray-300">
-                      Preview not available for this file type. Please download to view.
+                      {previewAttempted
+                        ? 'Preview is unavailable because the file could not be loaded from the server.'
+                        : 'Preview not available for this file type. Please download to view.'}
                     </p>
                     <Button variant="outline" size="sm" className="mt-4" onClick={handleDownload}>
                       <Download className="w-4 h-4 mr-2" />

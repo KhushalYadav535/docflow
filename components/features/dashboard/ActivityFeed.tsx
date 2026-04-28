@@ -63,8 +63,8 @@ export function ActivityFeed({ tenantId }: ActivityFeedProps) {
   };
 
   return (
-    <Card className="border-border bg-card p-6">
-      <h2 className="text-xl font-semibold text-foreground mb-6">Activity Feed</h2>
+    <Card className="rounded-[1.9rem] border border-border/70 bg-card/80 p-6 shadow-[0_18px_50px_rgba(15,15,20,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/6 dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+      <h2 className="mb-6 text-xl font-semibold text-foreground dark:text-white">Activity Feed</h2>
 
       <div className="space-y-4">
         {isLoading ? (
@@ -78,7 +78,7 @@ export function ActivityFeed({ tenantId }: ActivityFeedProps) {
             </div>
           ))
         ) : activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No recent activity</p>
+          <p className="py-8 text-center text-sm text-muted-foreground dark:text-white/45">No recent activity</p>
         ) : (
           activities.map((activity) => {
             const actionConfig = actionIcons[activity.action] || {
@@ -90,26 +90,26 @@ export function ActivityFeed({ tenantId }: ActivityFeedProps) {
             const Icon = actionConfig.icon;
 
             return (
-              <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-border/50 last:border-0 last:pb-0">
-                <div className={`flex-shrink-0 p-2 rounded-lg ${actionConfig.bg}`}>
+              <div key={activity.id} className="flex items-start gap-4 border-b border-border/60 pb-4 last:border-0 last:pb-0 dark:border-white/8">
+                <div className={`flex-shrink-0 rounded-xl p-2 ${actionConfig.bg}`}>
                   <Icon className={`h-4 w-4 ${actionConfig.color}`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">
+                  <p className="text-sm text-foreground dark:text-white">
                     <span className="font-medium">{activity.user_name || 'System'}</span>
                     {' '}
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground dark:text-white/48">
                       {actionConfig.text}
                     </span>
                     {' '}
                     {activity.document_name && (
-                      <span className="font-medium text-foreground truncate">
+                      <span className="truncate font-medium text-foreground dark:text-white">
                         {activity.document_name}
                       </span>
                     )}
                   </p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground dark:text-white/45">
                     <Clock className="h-3 w-3" />
                     <span>{formatTimestamp(activity.timestamp)}</span>
                   </div>

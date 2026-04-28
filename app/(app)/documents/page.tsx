@@ -19,21 +19,19 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-border/70 bg-card/80 p-6 shadow-[0_18px_50px_rgba(15,15,20,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/6 dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Documents</h1>
-          <p className="text-muted-foreground mt-2">Manage and search all your documents</p>
+          <h1 className="text-3xl font-semibold text-foreground dark:text-white">Documents</h1>
+          <p className="mt-2 text-muted-foreground">Manage and search all your documents</p>
         </div>
-        <Link href="/documents/upload">
-          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button asChild className="gap-2 rounded-full border border-primary/35 bg-primary px-5 text-primary-foreground shadow-[0_16px_50px_rgba(245,191,90,0.25)] hover:bg-primary/95">
+          <Link href="/documents/upload">
             <FileUp className="h-4 w-4" />
             Upload New
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
-      {/* Document Search Component */}
       <DocumentSearch />
     </div>
   );

@@ -6,7 +6,7 @@ import { RecentDocuments } from '@/components/features/dashboard/RecentDocuments
 import { MostAccessed } from '@/components/features/dashboard/MostAccessed';
 import { ActivityFeed } from '@/components/features/dashboard/ActivityFeed';
 import { Button } from '@/components/ui/button';
-import { FileUp, Search } from 'lucide-react';
+import { ArrowRight, Clock3, FileSearch, FileUp, Search, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
@@ -70,28 +70,70 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Welcome back! Here's your document management overview.</p>
-      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[2rem] border border-border/70 bg-card/80 p-8 shadow-[0_22px_60px_rgba(15,15,20,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/6 dark:shadow-[0_22px_60px_rgba(0,0,0,0.26)]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-sm text-primary">
+            <Sparkles className="h-4 w-4" />
+            Premium command center
+          </div>
+          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-foreground dark:text-white">Dashboard</h1>
+          <p className="mt-3 max-w-2xl text-base leading-8 text-muted-foreground dark:text-white/62">
+            Welcome back. Monitor documents, approvals, and storage from a cleaner workspace built to feel faster and more refined.
+          </p>
 
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-3">
-        {canPerformAction('upload_document') && (
-          <Link href="/documents/upload">
-            <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-              <FileUp className="h-4 w-4" />
-              Upload Document
+          <div className="mt-6 flex flex-wrap gap-3">
+            {canPerformAction('upload_document') && (
+              <Button asChild className="gap-2 rounded-full border border-primary/35 bg-primary px-6 text-primary-foreground shadow-[0_16px_50px_rgba(245,191,90,0.25)] hover:bg-primary/95">
+                <Link href="/documents/upload">
+                  <FileUp className="h-4 w-4" />
+                  Upload Document
+                </Link>
+              </Button>
+            )}
+            <Button asChild variant="outline" className="gap-2 rounded-full border-border/70 bg-card/70 px-6 text-foreground hover:border-primary/30 hover:bg-accent/35 hover:text-foreground dark:border-white/12 dark:bg-white/5 dark:text-white dark:hover:bg-white/8 dark:hover:text-white">
+              <Link href="/documents">
+                <Search className="h-4 w-4" />
+                Search Documents
+              </Link>
             </Button>
-          </Link>
-        )}
-        <Link href="/documents">
-          <Button variant="outline" className="gap-2 border-border text-foreground hover:bg-accent/10">
-            <Search className="h-4 w-4" />
-            Search Documents
-          </Button>
-        </Link>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+          <div className="rounded-[1.6rem] border border-border/70 bg-card/80 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-primary/12 p-3 text-primary">
+                <Clock3 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground dark:text-white/45">Today</p>
+                <p className="text-lg font-medium text-foreground dark:text-white">{stats.uploadedToday} uploads tracked</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[1.6rem] border border-border/70 bg-card/80 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-primary/12 p-3 text-primary">
+                <FileSearch className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground dark:text-white/45">Access</p>
+                <p className="text-lg font-medium text-foreground dark:text-white">{stats.totalDocuments.toLocaleString()} files in scope</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[1.6rem] border border-border/70 bg-card/80 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-primary/12 p-3 text-primary">
+                <ArrowRight className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground dark:text-white/45">Momentum</p>
+                <p className="text-lg font-medium text-foreground dark:text-white">Keep reviews and retrieval moving</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}

@@ -8,9 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 interface DocumentViewPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 interface DocumentData {
@@ -23,9 +23,11 @@ interface DocumentData {
   version?: string;
   status?: string;
   total_pages?: number;
+  ocr_text?: string;
 }
 
 export default function DocumentViewPage({ params }: DocumentViewPageProps) {
+  const resolvedParams = React.use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [document, setDocument] = useState<DocumentData | null>(null);
@@ -46,12 +48,12 @@ export default function DocumentViewPage({ params }: DocumentViewPageProps) {
 
   useEffect(() => {
     fetchDocument();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const fetchDocument = async () => {
     try {
       setIsLoading(true);
-      const data = await apiRequest<DocumentData>(`/documents/${params.id}`, { method: 'GET' });
+      const data = await apiRequest<DocumentData>(`/documents/${resolvedParams.id}`, { method: 'GET' });
       console.log('Fetched document:', data);
       if (!data || !data.id) {
         console.error('Invalid document data:', data);
@@ -123,6 +125,7 @@ export default function DocumentViewPage({ params }: DocumentViewPageProps) {
         status={document.status || 'Active'}
         totalPages={document.total_pages || 1}
         searchTerms={searchTerms}
+        extractedText={document.ocr_text}
       />
     </div>
   );
