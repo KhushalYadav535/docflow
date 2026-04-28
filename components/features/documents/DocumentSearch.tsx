@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,6 @@ const HighlightedText = ({ text, highlight }: { text: string; highlight: string 
 
 export function DocumentSearch() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [filters, setFilters] = useState<any>({});
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,14 +67,14 @@ export function DocumentSearch() {
   }, []);
 
   useEffect(() => {
-    const keywordFromUrl = searchParams.get('q');
+    const keywordFromUrl = new URLSearchParams(window.location.search).get('q');
     if (!keywordFromUrl) return;
 
     setFilters((prev: any) => {
       if (prev.keyword === keywordFromUrl) return prev;
       return { ...prev, keyword: keywordFromUrl };
     });
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     if (Object.keys(filters).length > 0) {
